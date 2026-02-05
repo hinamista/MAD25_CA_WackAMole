@@ -19,6 +19,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.delay
+import androidx.compose.ui.platform.LocalContext
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,8 +40,9 @@ private fun AppNav() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GameScreen(onOpenSettings: () -> Unit) {
+    val context = LocalContext.current
     var score by remember { mutableIntStateOf(0) }
-    var highScore by remember { mutableIntStateOf(5) }
+    var highScore by remember { mutableIntStateOf(Prefs.getHighScore(context)) }
     var timeLeft by remember { mutableIntStateOf(30) }
     var moleIndex by remember { mutableIntStateOf(-1) }
     var isRunning by remember { mutableStateOf(false) }
@@ -66,6 +68,10 @@ private fun GameScreen(onOpenSettings: () -> Unit) {
             timeLeft -= 1
 
             if (timeLeft <= 0) {
+                if (score > highScore) {
+                    highScore = score
+                    Prefs.setHighScore(context, highScore)
+                }
                 timeLeft = 0
                 isRunning = false
                 showGameOver = true
@@ -117,6 +123,7 @@ private fun GameScreen(onOpenSettings: () -> Unit) {
                                         score += 1
                                     }
                                 },
+                                enabled = isRunning,
                                 shape = CircleShape,
                                 modifier = Modifier.size(64.dp),
                                 contentPadding = PaddingValues(0.dp),
