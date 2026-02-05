@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,6 +45,16 @@ private fun GameScreen(onOpenSettings: () -> Unit) {
     var moleIndex by remember { mutableIntStateOf(-1) }
     var isRunning by remember { mutableStateOf(false) }
     var showGameOver by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isRunning) {
+        if (!isRunning) return@LaunchedEffect
+
+        while (isRunning) {
+            val nextDelay = (700..1000).random()
+            delay(nextDelay.toLong())
+            moleIndex = (0..8).random()
+        }
+    }
 
     Scaffold(
         topBar = {
