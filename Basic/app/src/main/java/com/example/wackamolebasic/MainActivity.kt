@@ -38,12 +38,12 @@ private fun AppNav() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GameScreen(onOpenSettings: () -> Unit) {
-    val score = 0
-    val highScore = 5
-    val timeLeft = 30
-    val moleIndex = -1
-    val isRunning = false
-    val showGameOver = false
+    var score by remember { mutableIntStateOf(0) }
+    var highScore by remember { mutableIntStateOf(5) }
+    var timeLeft by remember { mutableIntStateOf(30) }
+    var moleIndex by remember { mutableIntStateOf(-1) }
+    var isRunning by remember { mutableStateOf(false) }
+    var showGameOver by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -95,7 +95,13 @@ private fun GameScreen(onOpenSettings: () -> Unit) {
             }
 
             Button(
-                onClick = {  },
+                onClick = {
+                    score = 0
+                    timeLeft = 30
+                    moleIndex = -1
+                    showGameOver = false
+                    isRunning = !isRunning
+                },
                 shape = RoundedCornerShape(50),
                 contentPadding = PaddingValues(horizontal = 18.dp, vertical = 6.dp)
             ) {
