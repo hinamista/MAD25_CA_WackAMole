@@ -45,6 +45,8 @@ private fun GameScreen(onOpenSettings: () -> Unit) {
     var highScore by remember { mutableIntStateOf(Prefs.getHighScore(context)) }
     var timeLeft by remember { mutableIntStateOf(30) }
     var moleIndex by remember { mutableIntStateOf(-1) }
+    var moleToken by remember { mutableIntStateOf(0) }
+    var lastScoredToken by remember { mutableIntStateOf(-1) }
     var isRunning by remember { mutableStateOf(false) }
     var showGameOver by remember { mutableStateOf(false) }
 
@@ -55,7 +57,9 @@ private fun GameScreen(onOpenSettings: () -> Unit) {
         while (isRunning) {
             val nextDelay = (700..1000).random()
             delay(nextDelay.toLong())
+
             moleIndex = (0..8).random()
+            moleToken += 1
         }
     }
 
@@ -119,8 +123,9 @@ private fun GameScreen(onOpenSettings: () -> Unit) {
                             val index = r * 3 + c
                             FilledTonalButton(
                                 onClick = {
-                                    if (isRunning && index == moleIndex) {
+                                    if (isRunning && index == moleIndex && lastScoredToken != moleToken) {
                                         score += 1
+                                        lastScoredToken = moleToken
                                     }
                                 },
                                 enabled = isRunning,
@@ -140,6 +145,8 @@ private fun GameScreen(onOpenSettings: () -> Unit) {
                     score = 0
                     timeLeft = 30
                     moleIndex = -1
+                    moleToken = 0
+                    lastScoredToken = -1
                     showGameOver = false
                     isRunning = !isRunning
                 },
