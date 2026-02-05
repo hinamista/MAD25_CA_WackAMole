@@ -46,6 +46,7 @@ private fun GameScreen(onOpenSettings: () -> Unit) {
     var isRunning by remember { mutableStateOf(false) }
     var showGameOver by remember { mutableStateOf(false) }
 
+    // Mole Movement
     LaunchedEffect(isRunning) {
         if (!isRunning) return@LaunchedEffect
 
@@ -55,6 +56,24 @@ private fun GameScreen(onOpenSettings: () -> Unit) {
             moleIndex = (0..8).random()
         }
     }
+
+    // Countdown Timer
+    LaunchedEffect(isRunning) {
+        if (!isRunning) return@LaunchedEffect
+
+        while (isRunning) {
+            delay(1000L)
+            timeLeft -= 1
+
+            if (timeLeft <= 0) {
+                timeLeft = 0
+                isRunning = false
+                showGameOver = true
+                moleIndex = -1
+            }
+        }
+    }
+
 
     Scaffold(
         topBar = {
@@ -93,7 +112,11 @@ private fun GameScreen(onOpenSettings: () -> Unit) {
                         for (c in 0..2) {
                             val index = r * 3 + c
                             FilledTonalButton(
-                                onClick = { /* later */ },
+                                onClick = {
+                                    if (isRunning && index == moleIndex) {
+                                        score += 1
+                                    }
+                                },
                                 shape = CircleShape,
                                 modifier = Modifier.size(64.dp),
                                 contentPadding = PaddingValues(0.dp),
