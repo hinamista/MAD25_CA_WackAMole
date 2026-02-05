@@ -79,8 +79,11 @@ fun AppNav() {
         // Settings
         composable("settings") {
             SettingsScreen(
-                onBack = {
-                    nav.popBackStack()
+                onBack = { nav.popBackStack() },
+                onLogout = {
+                    nav.navigate("login") {
+                        popUpTo(0)
+                    }
                 }
             )
         }

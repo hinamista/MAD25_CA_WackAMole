@@ -4,15 +4,19 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Leaderboard
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.wackamoleadvanced.data.DbProvider
+import com.example.wackamoleadvanced.data.ScoreEntity
 import kotlinx.coroutines.delay
-import androidx.compose.material.icons.filled.Settings
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -21,6 +25,10 @@ fun GameScreen(
     onOpenSettings: () -> Unit,
     onOpenLeaderboard: () -> Unit
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val db = remember { DbProvider.get(context) }
+
     var score by remember { mutableIntStateOf(0) }
     var timeLeft by remember { mutableIntStateOf(30) }
     var moleIndex by remember { mutableIntStateOf(-1) }
@@ -30,27 +38,46 @@ fun GameScreen(
     var moleToken by remember { mutableIntStateOf(0) }
     var lastScoredToken by remember { mutableIntStateOf(-1) }
 
+    var savedThisRound by remember { mutableStateOf(false) }
+
     // Mole movement
     LaunchedEffect(isRunning) {
         if (!isRunning) return@LaunchedEffect
+
         while (isRunning) {
-            delay((700..1000).random().toLong())
+            val nextDelay = (700..1000).random()
+            delay(nextDelay.toLong())
             moleIndex = (0..8).random()
-            moleToken++
+            moleToken += 1
         }
     }
 
-    // CountDown Timer
+    // Countdown loop
     LaunchedEffect(isRunning) {
         if (!isRunning) return@LaunchedEffect
+
         while (isRunning) {
             delay(1000L)
-            timeLeft--
+            timeLeft -= 1
+
             if (timeLeft <= 0) {
                 timeLeft = 0
                 isRunning = false
                 moleIndex = -1
                 showGameOver = true
+
+                if (!savedThisRound && userId > 0) {
+                    savedThisRound = true
+                    scope.launch {
+                        db.scoreDao().insert(
+                            ScoreEntity(
+                                userId = userId,
+                                score = score,
+                                createdAt = System.currentTimeMillis()
+                            )
+                        )
+                    }
+                }
             }
         }
     }
@@ -61,7 +88,7 @@ fun GameScreen(
                 title = { Text("Wack-a-Mole") },
                 actions = {
                     IconButton(onClick = onOpenLeaderboard) {
-                        Icon(Icons.Filled.Leaderboard, contentDescription = "Leaderboard")
+                        Icon(Icons.Filled.List, contentDescription = "Leaderboard")
                     }
                     IconButton(onClick = onOpenSettings) {
                         Icon(Icons.Filled.Settings, contentDescription = "Settings")
@@ -71,34 +98,52 @@ fun GameScreen(
         }
     ) { padding ->
         Column(
-            Modifier.padding(padding).fillMaxSize().padding(16.dp),
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(Modifier.fillMaxWidth()) {
-                Text("Score: $score", Modifier.weight(1f), textAlign = TextAlign.Start)
-                Text("Time: $timeLeft", Modifier.weight(1f), textAlign = TextAlign.End)
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Score: $score",
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Start
+                )
+                Text(
+                    text = "Time: $timeLeft",
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.End
+                )
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(18.dp))
 
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 for (r in 0..2) {
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         for (c in 0..2) {
                             val index = r * 3 + c
+
                             FilledTonalButton(
                                 onClick = {
-                                    if (isRunning && index == moleIndex && lastScoredToken != moleToken) {
-                                        score++
+                                    if (
+                                        isRunning &&
+                                        index == moleIndex &&
+                                        lastScoredToken != moleToken
+                                    ) {
+                                        score += 1
                                         lastScoredToken = moleToken
                                     }
                                 },
                                 enabled = isRunning,
                                 shape = CircleShape,
-                                modifier = Modifier.size(64.dp)
+                                modifier = Modifier.size(64.dp),
+                                contentPadding = PaddingValues(0.dp)
                             ) {
                                 Text(if (index == moleIndex) "M" else "")
                             }
@@ -112,18 +157,23 @@ fun GameScreen(
                     score = 0
                     timeLeft = 30
                     moleIndex = -1
-                    moleToken = 0
-                    lastScoredToken = -1
                     showGameOver = false
                     isRunning = true
+
+                    moleToken = 0
+                    lastScoredToken = -1
+
+                    savedThisRound = false
                 },
-                shape = RoundedCornerShape(50)
+                shape = RoundedCornerShape(50),
+                contentPadding = PaddingValues(horizontal = 18.dp, vertical = 6.dp)
             ) {
                 Text(if (isRunning) "Restart" else "Start")
             }
 
+            Spacer(Modifier.height(10.dp))
+
             if (showGameOver) {
-                Spacer(Modifier.height(8.dp))
                 Text("Game over! Final score: $score")
             }
         }
